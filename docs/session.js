@@ -13,6 +13,7 @@ let dialogSession = '';
 let restoring = false;
 let allowAutoBookmark = false;
 let contentWasActive = false;
+let sessionWasActive = false;
 const requested = new URLSearchParams(location.search).get('next');
 const target = Object.hasOwn(ROUTES, requested) ? requested : null;
 const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -52,7 +53,9 @@ const common = [['done','✓','Done',''],['not-yet','🌱','Not yet',''],['not-t
 const choices = index => questions[index].choices || common;
 const label = index => choices(index).find(c => c[0] === answers[index])?.[2] || 'Not answered';
 const pending = index => ['not-yet','not-today','help'].includes(answers[index]);
+function pauseWelcome() { document.querySelectorAll('.welcome-media video').forEach(video => video.pause()); }
 function showQuestion(index) {
+  pauseWelcome();
   currentView = 'questions'; currentQuestion = index;
   const q = questions[index];
   panel(`<p class="step-label">A little check-in · ${index + 1} of 5</p><div class="journey-progress" aria-hidden="true">${questions.map((_,i)=>`<span class="${i<=index?'visited':''}"></span>`).join('')}</div><div class="question-cue" aria-hidden="true">${q.cue}</div><h2 tabindex="-1">${q.title}</h2><p>${q.description}</p><div class="choice-grid" role="group" aria-label="Choose your answer">${choices(index).map(([id,icon,text,hint])=>`<button type="button" class="choice" data-answer="${id}" aria-pressed="${answers[index]===id}"><span class="choice-icon" aria-hidden="true">${icon}</span><span>${text}${hint?`<small>${hint}</small>`:''}</span></button>`).join('')}</div><p class="feedback" role="status" id="answer-feedback">${answerFeedback(answers[index])}</p><div class="journey-actions">${button(index ? 'Back' : 'Back to welcome','back',true)}<button type="button" class="button" data-action="next" ${answers[index]?'':'disabled'}>${index===4?'Review together':'Next question'}</button></div>`);
@@ -72,7 +75,7 @@ function welcome(focus = true) {
   const hasPlace = !!state.progress[state.last];
   const placeNames = {story:'The story',game:'The game',reflection:'For grown-ups',prepare:'Gather your supplies',play:'How to play','step-1':'Step 1: Draw your first route','step-2':'Step 2: Change something','step-3':'Step 3: Pause and notice','step-4':'Step 4: Choose your next move',challenge:'Choose your challenge',talk:'Talk together'};
   const placeName = placeNames[state.progress[state.last]?.section];
-  panel(`<p class="step-label">Welcome, explorer</p><h2 tabindex="-1">A little check-in. Then an adventure.</h2><p>Hi, I’m Wobble! We’ll explore stories, try activities, and ask big questions together. First, take a moment with your grown-up to think about your day.</p>${hasPlace?`<p class="resume-note">Your place in ${state.last==='story'?'Wobble’s story':'the route activity'} is waiting: <strong>${escape(placeName)}</strong>. Start a new check-in and choose your time to return to it.</p>`:''}<p>Five picture questions. Honest answers. Room for a different kind of day.</p><div class="journey-actions">${button('Let’s check in','checkin')}<a class="button secondary" href="${ROOT}about/">For grown-ups</a></div><p class="fine">No microphone, camera, scores, or proof needed.</p>`, focus);
+  panel(`<p class="step-label">Welcome, explorer</p><h2 tabindex="-1">A little check-in. Then an adventure.</h2><p>Hi, I’m Wobble, your learning buddy! Let’s fill a little gadget time with knowledge, new lessons, and big discoveries. First, take a moment with your grown-up to think about your day.</p>${hasPlace?`<p class="resume-note">Your place in ${state.last==='story'?'Wobble’s story':'the route activity'} is waiting: <strong>${escape(placeName)}</strong>. Start a new check-in and choose your time to return to it.</p>`:''}<p>Five picture questions. Honest answers. Room for a different kind of day.</p><div class="journey-actions">${button('Let’s check in','checkin')}<a class="button secondary" href="${ROOT}about/">For grown-ups</a></div><p class="fine">No microphone, camera, scores, or proof needed.</p>`, focus);
 }
 function ready(focus = true) {
   currentView = 'ready';
@@ -97,16 +100,20 @@ function showPause() {
   const left = remaining(state);
   dialogSession = state.session?.id || '';
   modal.innerHTML = `<p class="eyebrow">A gentle stopping place</p><h2 id="pause-title">${left?'Let’s take a break.':'Our time is up for now.'}</h2><p data-storage>${persistence.mode==='device'?'Your place is saved in this browser for another day.':'Your place is saved in this tab.'} Stopping is part of the adventure, too.</p><p>${left?'The timer is paused.':'You do not need to finish everything today.'}</p><div class="journey-actions">${button('Stop for today','stop')}${button('Grown-up: review our time','show-extension',true)}</div><div id="extension" hidden><label class="check-row"><input type="checkbox" id="resume-approved"><span>I’m the grown-up, and we agree to continue.</span></label><label for="extra-time">Time to add</label><select class="time-choice" id="extra-time">${left?'<option value="0">Use our remaining time</option>':''}<option value="1">1 minute to finish a thought</option><option value="5">5 more minutes</option><option value="10">10 more minutes</option><option value="15">15 more minutes</option></select><div class="journey-actions">${button('Continue together','resume')}</div></div><p data-error role="alert" class="error" tabindex="-1" hidden></p>`;
+  pauseWelcome();
   modal.showModal();
 }
 function update() {
   read();
+  const welcomeWasPlaying = [...document.querySelectorAll('.welcome-media video')].some(video => !video.paused);
   const s = state.session;
   const today = s?.day === day();
   if (s?.status === 'active' && (!today || remaining(state) <= 0)) {
     pause(state); save();
   }
   const isActive = active(state);
+  if (sessionWasActive && !isActive) pauseWelcome();
+  sessionWasActive = isActive;
   bar.hidden = !isActive;
   const isPaused = today && state.session?.status === 'paused';
   document.body.classList.toggle('session-paused', isPaused);
@@ -137,7 +144,7 @@ function update() {
     else if (isPaused && currentView !== 'paused') pausedPage(false);
     else if (!isActive && !isPaused && ['ready','paused'].includes(currentView)) welcome(false);
   }
-  if (isPaused && (protectedName || currentView==='paused') && !modal.open && dialogSession !== s.id) showPause();
+  if (isPaused && (protectedName || currentView==='paused' || welcomeWasPlaying) && !modal.open && dialogSession !== s.id) showPause();
 }
 function stopSession() {
   if (!change(stop)) return error('We could not save the stopped session. Please keep this page open and check browser storage.', modal.open ? modal : hub);
@@ -173,7 +180,7 @@ document.addEventListener('click', e => {
       location.assign(destination(target || state.last,state));
     } catch (err) { error(err.message); }
   }
-  if (action === 'pause') { change(pause); dialogSession=''; update(); if (!modal.open) showPause(); }
+  if (action === 'pause') { pauseWelcome(); change(pause); dialogSession=''; update(); if (!modal.open) showPause(); }
   if (action === 'review-time') { read(); showPause(); }
   if (action === 'show-extension') { modal.querySelector('#extension').hidden=false; modal.querySelector('#resume-approved').focus(); }
   if (action === 'resume') {
@@ -242,32 +249,28 @@ if (protectedName) {
     requestAnimationFrame(()=>{document.getElementById(saved)?.scrollIntoView({behavior:'instant'}); restoring=false;});
   }
 }
-// The existing GIF is an optional preview, never a simulated speaking intro.
-const motionButton=document.querySelector('#wobble-motion');
-if (motionButton) {
-  const portrait=document.querySelector('#wobble-preview');
-  const media=matchMedia('(prefers-reduced-motion: reduce)');
-  const still=()=>{portrait.src=ROOT+'assets/wobble-portrait.jpg';portrait.alt='Wobble, the orange scout robot with blue eyes';motionButton.textContent='Play Wobble’s movement preview';motionButton.setAttribute('aria-pressed','false');};
-  still();
-  motionButton.addEventListener('click',()=>{
-    if (motionButton.getAttribute('aria-pressed')==='true') return still();
-    portrait.src=ROOT+'assets/wobble_rolling_out.gif';portrait.alt='Wobble rolling into view';motionButton.textContent='Pause movement';motionButton.setAttribute('aria-pressed','true');
-  });
-  media.addEventListener('change',e=>{if(e.matches)still();});
-}
 addEventListener('storage',e=>{if(e.key===KEY || e.key===null) update();});
 addEventListener('pageshow',()=>update());
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)update();});
 setInterval(update,1000);
 update();
-// No unfinished or approximate speaking video is presented as a finished intro.
-if (document.querySelector('#intro-player')) {
-  import('./intro-media.js').then(({default:media})=>{
-    if (!media || !['video','captions','poster'].every(k=>typeof media[k]==='string' && media[k].startsWith(ROOT+'assets/'))) return;
-    const wrapper=document.querySelector('#intro-player');
-    const video=wrapper.querySelector('video');
-    video.src=media.video; video.poster=media.poster; video.querySelector('track').src=media.captions;
-    wrapper.hidden=false;
-    wrapper.querySelector('a').addEventListener('click',()=>{document.querySelector('#welcome-transcript').open=true;video.pause();});
-  }).catch(()=>{/* The written welcome remains available. */});
+
+// Native player remains usable without JavaScript; these hooks coordinate family time.
+for (const video of document.querySelectorAll('.welcome-media video')) {
+  const wrapper = video.closest('.welcome-media');
+  const failure = wrapper.querySelector('.welcome-media-error');
+  const showFailure = () => { if (failure) failure.hidden = false; };
+  video.addEventListener('error', showFailure);
+  video.querySelector('source')?.addEventListener('error', showFailure);
+  video.addEventListener('play', () => {
+    update();
+    if (state.session?.day === day() && state.session.status === 'paused') {
+      video.pause(); showPause();
+    }
+  });
 }
+document.querySelector('#welcome-transcript')?.addEventListener('toggle', event => {
+  if (event.target.open) pauseWelcome();
+});
+addEventListener('pagehide', pauseWelcome);
+document.addEventListener('visibilitychange', () => { if (document.hidden) pauseWelcome(); });

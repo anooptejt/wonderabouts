@@ -53,17 +53,22 @@ and `session.css`. No backend, account, API, or production build dependency is n
   If both are blocked, starting is refused with an explanation rather than promising saving.
 - Privacy includes a two-step clear-data control. No analytics, advertising, microphones,
   camera use, uploads, or external fonts were added.
-- The existing silent GIF is optional, with a still portrait and play/pause control.
+- Wobble’s 72-second child-voice welcome replaces the GIF on the home and start pages.
 
 ### Speaking introduction
 
-The exact requested welcome is readable on the start page. A speaking MP4 is **not yet
-produced or approved**. `intro-media.js` deliberately exports `null`. After the creator
-approves a 10–15-second proof with authentic audio-driven digital-mouth lip sync, and
-subsequently approves the complete video, add its self-hosted MP4, accurate WebVTT
-captions and poster to that manifest. The player provides native controls, captions,
-a written alternative, and no autoplay. Do not substitute a pulsing visor or silent GIF
-for synchronized speech. Track the remaining production work in Beads.
+The user authorized publishing the latest happy child-voice video in place of the GIF.
+The home and start pages serve the same native MP4 player, accurate WebVTT captions,
+static poster and complete written transcript. Playback is optional, has no autoplay
+or loop, and does not download video until requested (`preload="none"`). The character
+uses a synthetic child voice and audio-aligned digital mouth. The current video uses
+the garden scene throughout; separate illustrated question cues remain future visual work.
+
+Starting a check-in, opening the transcript, hiding the tab, or pausing/ending an active
+family session pauses the welcome. Playback during a paused session requires the existing
+grown-up resume flow. A welcome watched before check-in is outside the session timer;
+watching it during an active session uses that session's remaining time. A media-load
+failure leaves the transcript and check-in available. No third-party video embed is used.
 
 ### Validation and local preview
 
