@@ -53,22 +53,31 @@ and `session.css`. No backend, account, API, or production build dependency is n
   If both are blocked, starting is refused with an explanation rather than promising saving.
 - Privacy includes a two-step clear-data control. No analytics, advertising, microphones,
   camera use, uploads, or external fonts were added.
-- Wobble’s 72-second child-voice welcome replaces the GIF on the home and start pages.
+- Wobble’s 60-second school welcome replaces the earlier introduction on home and start.
 
-### Speaking introduction
+### Speaking introduction and landing page
 
-The user authorized publishing the latest happy child-voice video in place of the GIF.
-The home and start pages serve the same native MP4 player, accurate WebVTT captions,
-static poster and complete written transcript. Playback is optional, has no autoplay
-or loop, and does not download video until requested (`preload="none"`). The character
-uses a synthetic child voice and audio-aligned digital mouth. The current video uses
-the garden scene throughout; separate illustrated question cues remain future visual work.
+The homepage leads with Wobble’s 60-second school video, colorful name and digital-mouth
+animation. The first visit attempts muted inline autoplay with captions. “Hear Wobble”
+restarts from the beginning with sound after a user gesture. Native controls remain available.
+Reduced-motion or data-saving preferences use manual playback. Browsers can decline autoplay;
+the poster, Play control, transcript and adventure links remain usable. The check-in page
+uses the same video but starts only on request. No looping or external embeds.
 
-Starting a check-in, opening the transcript, hiding the tab, or pausing/ending an active
-family session pauses the welcome. Playback during a paused session requires the existing
-grown-up resume flow. A welcome watched before check-in is outside the session timer;
-watching it during an active session uses that session's remaining time. A media-load
-failure leaves the transcript and check-in available. No third-party video embed is used.
+The homepage initializes autoplay only after the family-session checks. Paused sessions,
+background tabs, check-in actions and opening the transcript stop the video. The existing
+session timer remains authoritative during active sessions. A welcome before check-in is
+outside that timer. No new storage keys or account services are used.
+
+### Editorial direction
+
+Stories and activities should carry resilience and morality through concrete choices:
+- Give each story a resolved ending, showing what changed and what the character learned.
+- Show resilience as adapting, resting and asking for support, as well as trying again.
+- Show honesty, kindness, fairness and responsibility through actions and consequences.
+- Allow mistakes and repair without shame or labelling children as good or bad.
+- End with a short age-appropriate takeaway and one optional reflection question.
+- Connect activities to a small everyday action; keep factual, privacy and navigation copy practical.
 
 ### Validation and local preview
 

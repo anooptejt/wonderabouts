@@ -268,6 +268,37 @@ for (const video of document.querySelectorAll('.welcome-media video')) {
       video.pause(); showPause();
     }
   });
+  if (video.hasAttribute('data-landing-autoplay')) {
+    const sound = wrapper.querySelector('[data-hear-wobble]');
+    const note = wrapper.querySelector('.welcome-video-note');
+    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+    const pausedToday = () => state.session?.day === day() && state.session.status === 'paused';
+    const soundLabel = () => {
+      sound.textContent = video.ended ? 'Watch again with sound' : video.muted ? 'Hear Wobble · restart with sound' : 'Mute Wobble';
+    };
+    sound.hidden = false;
+    sound.addEventListener('click', () => {
+      update();
+      if (pausedToday()) { showPause(); return; }
+      if (video.muted || video.ended) {
+        video.currentTime = 0;
+        video.muted = false;
+        video.play().catch(() => { note.textContent = 'Press Play to watch Wobble. Captions and the written welcome are available too.'; });
+      } else video.muted = true;
+      soundLabel();
+    });
+    video.addEventListener('volumechange', soundLabel);
+    video.addEventListener('ended', soundLabel);
+    reducedMotion.addEventListener('change', e => { if (e.matches) video.pause(); });
+    if (!reducedMotion.matches && !navigator.connection?.saveData && !document.hidden && !pausedToday()) {
+      video.muted = true;
+      video.autoplay = true;
+      video.play().catch(() => { note.textContent = 'Ready when you are. Press Play, or hear Wobble from the beginning with sound.'; });
+    } else {
+      note.textContent = pausedToday() ? 'Your family session is paused. Continue with your grown-up when you’re ready.' : 'Ready when you are · Press Play or Hear Wobble · Captions included';
+    }
+  }
+
 }
 document.querySelector('#welcome-transcript')?.addEventListener('toggle', event => {
   if (event.target.open) pauseWelcome();

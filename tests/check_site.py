@@ -38,7 +38,13 @@ for path in (base/'index.html',base/'start/index.html'):
  assert len(page.videos)==1 and len(page.tracks)==1, f'Expected one captioned welcome: {path}'
  video=page.videos[0];track=page.tracks[0]
  assert all(k in video for k in ('controls','playsinline','poster','aria-label'))
- assert video.get('preload')=='none' and 'autoplay' not in video and 'loop' not in video
+ assert 'loop' not in video and 'autoplay' not in video
+ if path == base/'index.html':
+  assert 'data-landing-autoplay' in video and 'muted' in video
+  assert video.get('preload')=='metadata'
+  assert path.read_text().index('<video') < path.read_text().index('id="explore"')
+ else:
+  assert video.get('preload')=='none' and 'data-landing-autoplay' not in video
  assert track.get('kind')=='captions' and 'default' in track
  captions=(base/track['src'].removeprefix('/wonderabouts/')).read_text()
  assert captions.startswith('WEBVTT')
@@ -46,4 +52,4 @@ for path in (base/'index.html',base/'start/index.html'):
  transcript=re.search(r'<details class="intro-copy" id="welcome-transcript">.*?<div class="prose">(.*?)</div>',path.read_text(),re.S).group(1)
  normalize=lambda text:re.findall(r"[a-z]+(?:'[a-z]+)?",text.lower().replace('’',"'"))
  assert normalize(' '.join(cues))==normalize(re.sub('<[^>]+>',' ',transcript)),f'Captions differ from transcript: {path}'
-print('PASS: home/start native players, no autoplay/loop/GIF, caption assets and complete matching transcripts')
+print('PASS: home/start native players, guarded landing autoplay, manual check-in playback, no loop/GIF, caption assets and complete matching transcripts')
